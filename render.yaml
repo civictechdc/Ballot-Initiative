@@ -42,6 +42,7 @@ services:
           property: user
     region: virginia
     buildCommand: pip install -r requirements.txt
+    preDeployCommand: cd app && piccolo migrations f all
     startCommand: fastapi run app/api.py
     autoDeployTrigger: commit
 databases:
