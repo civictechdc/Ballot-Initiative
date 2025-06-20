@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: ballot-initiative-app
+    runtime: static
+    repo: https://github.com/civictechdc/Ballot-Initiative
+    branch: civic/deploy-render
+    envVars:
+      - key: VITE_BACKEND_URL
+        fromService:
+          type: web
+          name: ballot-initiative-api
+          envVarKey: RENDER_EXTERNAL_URL
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeployTrigger: commit
+    rootDir: frontend
+  - type: web
+    name: ballot-initiative-api
+    runtime: python
+    repo: https://github.com/civictechdc/Ballot-Initiative
+    branch: civic/deploy-render
+    plan: free
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: ballot-initiative-app
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: ballot-initiative-db
+          property: host
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: ballot-initiative-db
+          property: password
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: ballot-initiative-db
+          property: user
+    region: virginia
+    buildCommand: pip install -r requirements.txt
+    startCommand: fastapi run app/api.py
+    autoDeployTrigger: commit
+databases:
+  - name: ballot-initiative-db
+    databaseName: ballot_initiative
+    plan: free
+    region: virginia
+    ipAllowList: []
+version: "1"
