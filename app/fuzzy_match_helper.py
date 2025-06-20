@@ -1,7 +1,6 @@
 # needed libraries
 ### structured outputs; replacements
 import os
-import json
 from typing import List, Tuple
 from tqdm.notebook import tqdm
 from rapidfuzz import fuzz
@@ -18,8 +17,7 @@ REPODIR = os.getcwd()
 load_dotenv(os.path.join(REPODIR, ".env"), override=True)
 
 # load config
-with open("config.json", "r") as f:
-    config = json.load(f)
+config = {"BASE_THRESHOLD": 85, "TOP_CROP": 0.385, "BOTTOM_CROP": 0.725}
 
 # Set up logging after imports
 log_directory = "logs"
@@ -49,7 +47,7 @@ logger.addHandler(console_handler)
 ###
 
 
-def create_select_voter_records(voter_records: pd.DataFrame) -> pd.DataFrame:
+async def create_select_voter_records(voter_records: pd.DataFrame) -> pd.DataFrame:
     """
     Creates a simplified DataFrame with full names and addresses from voter records.
 
@@ -166,7 +164,7 @@ def get_matched_name_address(
     return results
 
 
-def create_ocr_matched_df(
+async def create_ocr_matched_df(
     ocr_df: pd.DataFrame,
     select_voter_records: pd.DataFrame,
     threshold: float = config["BASE_THRESHOLD"],

@@ -2,9 +2,11 @@ import os
 from enum import Enum
 from io import BytesIO
 
+from asyncpg import UniqueViolationError
 from fastapi.responses import FileResponse
 import pandas as pd
 from fastapi import APIRouter, Request, Response, UploadFile
+from voter_records.tables import Ballot, VoterRecord
 from utils import logger
 
 router = APIRouter(tags=["File Upload"])
@@ -12,6 +14,7 @@ router = APIRouter(tags=["File Upload"])
 if not os.path.exists("temp"):
     os.makedirs("temp")
     logger.info("Created temporary directory: temp")
+
 
 class UploadFileTypes(str, Enum):
     voter_records = "voter_records"
@@ -33,7 +36,7 @@ def clear_all_files(request: Request):
 
 
 @router.post("/upload/{filetype}")
-def upload_file(
+async def upload_file(
     filetype: UploadFileTypes, file: UploadFile, response: Response, request: Request
 ):
     """Uploads file to the server and saves it to a temporary directory.
@@ -42,6 +45,7 @@ def upload_file(
         filetype (UploadFileTypes): can be voter_records or petition_signatures
     """
     logger.info(f"Received file: {file.filename} of type: {filetype}")
+    message = ""
 
     # Validate file type extension
     match filetype:
@@ -49,9 +53,23 @@ def upload_file(
             if not file.filename.endswith(".pdf"):
                 response.status_code = 400
                 return {"error": "Invalid file type. Only pdf files are allowed."}
-            with open(os.path.join("temp", "ballot.pdf"), "wb") as buffer:
-                buffer.write(file.file.read())
-                logger.info("File saved to temporary directory: temp/ballot.pdf")
+            # Clear temp directory before loading new file
+            for temp_file in os.listdir("temp"):
+                temp_path = os.path.join("temp", temp_file)
+                if os.path.isfile(temp_path):
+                    os.remove(temp_path)
+                    logger.info(f"Deleted existing file: {temp_path}")
+            
+            # Save file to temp directory
+            contents = await file.read()
+            with open(f"temp/{file.filename}", "wb") as f:
+                f.write(contents)
+
+            # Save ballot to database
+            instance = Ballot(name=file.filename)
+            await instance.save()
+
+            message = f"Ballot {file.filename} uploaded successfully"
         case UploadFileTypes.voter_records:
             if not file.filename.endswith(".csv"):
                 response.status_code = 400
@@ -59,18 +77,6 @@ def upload_file(
             contents = file.file.read()
             buffer = BytesIO(contents)
             df = pd.read_csv(buffer, dtype=str)
-
-            # Create necessary columns
-            df["Full Name"] = df["First_Name"] + " " + df["Last_Name"]
-            df["Full Address"] = (
-                df["Street_Number"]
-                + " "
-                + df["Street_Name"]
-                + " "
-                + df["Street_Type"]
-                + " "
-                + df["Street_Dir_Suffix"]
-            )
 
             required_columns = [
                 "First_Name",
@@ -80,14 +86,29 @@ def upload_file(
                 "Street_Type",
                 "Street_Dir_Suffix",
             ]
-            request.app.state.voter_records_df = df
 
             # Verify required columns
             if not all(col in df.columns for col in required_columns):
                 response.status_code = 400
                 return {"error": "Missing required columns in voter records file."}
 
-    return {"filename": file.filename}
+            data = df.to_dict(orient="records")
+            count = 0
+            error = 0
+            duplicates = 0
+            for row in data:
+                instance = VoterRecord(**row)
+                try:
+                    await instance.save()
+                    count += 1
+                except UniqueViolationError:
+                    duplicates += 1
+                    logger.warning(f"Duplicate voter record: {row}")
+                except Exception as e:
+                    logger.error(f"Error saving voter record {row}: {e}")
+                    error += 1
+            message = f"{count} voter records uploaded successfully, {duplicates} duplicates skipped, {error} errors"
+    return {"filename": file.filename, "message": message}
 
 
 @router.get("/upload/{filetype}")

@@ -1,7 +1,6 @@
 from typing import List
 import base64
 import os
-import json
 from tqdm.notebook import tqdm
 from dotenv import load_dotenv
 import pandas as pd
@@ -46,8 +45,7 @@ HELICONE_PERSONAL_API_KEY = os.getenv("HELICONE_PERSONAL_API_KEY")
 
 
 # load config
-with open("config.json", "r") as f:
-    config = json.load(f)
+config = {"BASE_THRESHOLD": 85, "TOP_CROP": 0.385, "BOTTOM_CROP": 0.725}
 
 
 def collecting_pdf_encoded_images(file_path: str) -> List[str]:
@@ -141,7 +139,7 @@ def get_or_create_event_loop() -> asyncio.AbstractEventLoop:
         return loop
 
 
-def collect_ocr_data(
+async def collect_ocr_data(
     filedir: str,
     filename: str,
     max_page_num: int = None,
@@ -179,9 +177,6 @@ def collect_ocr_data(
     full_data = []
     total_pages = len(encoded_images)
 
-    # getting event loop
-    loop = get_or_create_event_loop()
-
     # Process in batches
     logger.info(f"Processing {total_pages} pages in batches of {batch_size}")
     for i in tqdm(range(0, total_pages, batch_size)):
@@ -199,7 +194,7 @@ def collect_ocr_data(
             )
 
         # Run async batch processing using the event loop
-        batch_results = loop.run_until_complete(process_batch_async(batch))
+        batch_results = await process_batch_async(batch)
 
         # Add metadata for each result in the batch
         for page_idx, result in enumerate(batch_results):
@@ -215,7 +210,7 @@ def collect_ocr_data(
     return full_data
 
 
-def create_ocr_df(
+async def create_ocr_df(
     filedir: str,
     filename: str,
     max_page_num: int = None,
@@ -238,7 +233,7 @@ def create_ocr_df(
     logger.info("Starting OCR DataFrame creation")
 
     # gathering ocr_data
-    ocr_data = collect_ocr_data(
+    ocr_data = await collect_ocr_data(
         filedir,
         filename,
         max_page_num=max_page_num,

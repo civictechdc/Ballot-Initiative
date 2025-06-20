@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 import tomllib
 import pathlib
@@ -67,8 +68,19 @@ def load_settings(
 
     file = pathlib.Path(path)
 
-    with open(file, "rb") as f:
-        settings = tomllib.load(f)
+    try:
+        with open(file, "rb") as f:
+            settings = tomllib.load(f)
+    except:
+        logger.info(f"Could not find settings file at {file}. Using default settings.")
+        settings = {
+            "selected_ocr_engine": "open_ai",
+            "open_ai": {
+                "api_key": os.getenv("OPENAI_API_KEY"),
+                "model": "gpt-4.1-nano",
+            },
+            "debug_mode": False,
+        }
 
     selected_engine = settings["selected_ocr_engine"]
     engine_config = settings.get(selected_engine)
