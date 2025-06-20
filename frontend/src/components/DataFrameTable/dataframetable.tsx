@@ -1,4 +1,3 @@
-import React, { useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -7,161 +6,140 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { Checkbox } from "../ui/checkbox";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown } from "lucide-react";
 
-interface DataFrameTableProps {
-  data: any[];
+export interface DataFrameTableProps {
+  data: Record<string, any>[];
+  isLoading?: boolean;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (pageSize: number) => void;
+  };
+  sorting: {
+    field: string;
+    direction: "asc" | "desc";
+    onSort: (field: string) => void;
+  };
+  renderers?: { [key: string]: (value: any, row?: any) => React.ReactNode };
 }
 
-const DataFrameTable = ({ data }: DataFrameTableProps) => {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const columns = useMemo(
-    () =>
-      Object.keys(data[0] || {}).map((key) => {
-        let column: ColumnDef<any> = {
-          header: ({ column }: { column: any }) => {
-            return (
-              <Button
-                variant="ghost"
-                onClick={() =>
-                  column.toggleSorting(column.getIsSorted() === "asc")
-                }
-              >
-                {column.getIsSorted() === "asc" && <ArrowUp />}
-                {column.getIsSorted() === "desc" && <ArrowDown />}
-                {!column.getIsSorted() && <ArrowUpDown />}
-                {key}
-              </Button>
-            );
-          },
-          accessorKey: key,
-        };
-        switch (key) {
-          case "Valid":
-            column = {
-              ...column,
-              cell: ({ row }: { row: any }) => {
-                return <Checkbox checked={row.getValue("Valid")} />;
-              },
-            };
-            break;
-        }
-        return column;
-      }),
-    [data]
-  );
+export default function DataFrameTable({ data, isLoading, pagination, sorting, renderers }: DataFrameTableProps) {
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      sorting,
-      columnFilters,
-    },
-  });
+  if (!data || data.length === 0) {
+    return <div>No data available</div>;
+  }
+
+  const columns = Object.keys(data[0]).map((key) => ({
+    accessorKey: key,
+    header: key.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" "),
+  }));
+  const totalPages = pagination ? Math.ceil(pagination.totalCount / pagination.pageSize) : 1;
+  const startEntry = pagination ? (pagination.page - 1) * pagination.pageSize + 1 : 1;
+  const endEntry = pagination ? Math.min(pagination.page * pagination.pageSize, pagination.totalCount) : 0;
+
+  const getSortIcon = (field: string) => {
+    if (field !== sorting.field) return <ArrowUpDown className="h-4 w-4" />;
+    return sorting.direction === "asc" ? 
+      <ArrowUpDown className="h-4 w-4 rotate-180" /> : 
+      <ArrowUpDown className="h-4 w-4" />;
+  };
 
   return (
-    <div>
-      <div className="rounded-md border grow w-full">
+    <div className="space-y-4">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead
-                      key={header.id}
-                      className="bg-gray-200 dark:bg-gray-800 border-1 border-black dark:border-gray-700"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
+            <TableRow>
+              {columns.map((column) => (
+                <TableHead 
+                  key={column.accessorKey} 
+                  className="px-4 py-2 text-left font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                  onClick={() => sorting.onSort(column.accessorKey)}
+                >
+                  <div className="flex items-center gap-2">
+                    {column.header}
+                    {getSortIcon(column.accessorKey)}
+                  </div>
+                </TableHead>
+              ))}
+            </TableRow>
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="border-1 border-black dark:border-gray-700"
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
+            {data.map((row, rowIndex) => (
+              <TableRow key={rowIndex} className="border-t">
+                {columns.map((column) => (
+                  <TableCell key={column.accessorKey} className="px-4 py-2">
+                    {renderers && renderers[column.accessorKey]
+                      ? renderers[column.accessorKey](row[column.accessorKey], row)
+                      : row[column.accessorKey]}
+                  </TableCell>
+                ))}
               </TableRow>
-            )}
+            ))}
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Previous
-        </Button>
-        <div>
-          {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+
+      {pagination && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <p className="text-sm text-muted-foreground">
+              Showing {startEntry} to {endEntry} of {pagination.totalCount} entries
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-6 lg:space-x-8">
+            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+              Page {pagination.page} of {totalPages}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                className="hidden h-8 w-8 p-0 lg:flex"
+                onClick={() => pagination.onPageChange(1)}
+                disabled={pagination.page === 1}
+              >
+                <span className="sr-only">Go to first page</span>
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => pagination.onPageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+              >
+                <span className="sr-only">Go to previous page</span>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => pagination.onPageChange(pagination.page + 1)}
+                disabled={pagination.page === totalPages}
+              >
+                <span className="sr-only">Go to next page</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="hidden h-8 w-8 p-0 lg:flex"
+                onClick={() => pagination.onPageChange(totalPages)}
+                disabled={pagination.page === totalPages}
+              >
+                <span className="sr-only">Go to last page</span>
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Next
-        </Button>
-      </div>
+      )}
     </div>
   );
-};
-export default DataFrameTable;
+}

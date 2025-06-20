@@ -11,10 +11,17 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as VoterRecordsImport } from './routes/voter-records'
 import { Route as PetitionImport } from './routes/petition'
 import { Route as IndexImport } from './routes/index'
 
 // Create/Update Routes
+
+const VoterRecordsRoute = VoterRecordsImport.update({
+  id: '/voter-records',
+  path: '/voter-records',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const PetitionRoute = PetitionImport.update({
   id: '/petition',
@@ -46,6 +53,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PetitionImport
       parentRoute: typeof rootRoute
     }
+    '/voter-records': {
+      id: '/voter-records'
+      path: '/voter-records'
+      fullPath: '/voter-records'
+      preLoaderRoute: typeof VoterRecordsImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -54,36 +68,41 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/petition': typeof PetitionRoute
+  '/voter-records': typeof VoterRecordsRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/petition': typeof PetitionRoute
+  '/voter-records': typeof VoterRecordsRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/petition': typeof PetitionRoute
+  '/voter-records': typeof VoterRecordsRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/petition'
+  fullPaths: '/' | '/petition' | '/voter-records'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/petition'
-  id: '__root__' | '/' | '/petition'
+  to: '/' | '/petition' | '/voter-records'
+  id: '__root__' | '/' | '/petition' | '/voter-records'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PetitionRoute: typeof PetitionRoute
+  VoterRecordsRoute: typeof VoterRecordsRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PetitionRoute: PetitionRoute,
+  VoterRecordsRoute: VoterRecordsRoute,
 }
 
 export const routeTree = rootRoute
@@ -97,7 +116,8 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/petition"
+        "/petition",
+        "/voter-records"
       ]
     },
     "/": {
@@ -105,6 +125,9 @@ export const routeTree = rootRoute
     },
     "/petition": {
       "filePath": "petition.tsx"
+    },
+    "/voter-records": {
+      "filePath": "voter-records.tsx"
     }
   }
 }

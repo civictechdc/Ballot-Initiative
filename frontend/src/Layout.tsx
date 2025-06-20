@@ -1,8 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar, items } from "@/components/sidebar";
 import { ModeToggle } from "./components/theme-provider/mode-toggle";
-import Markdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
 import { useLocation } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -12,31 +10,22 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <main className="w-full">
+      <div className="flex flex-col min-h-screen">
         <header className="text-left flex">
-          <SidebarTrigger /> | {""}
-          {items.find((item) => item.url === location.pathname)?.title}
+          <SidebarTrigger className="text-2xl"/>
+          <h2>
+            {items.find((item) => item.url === location.pathname)?.title}
+          </h2>
         </header>
-        {children}
-        <ModeToggle />
-        <Toaster />
-        <footer>
-          <Markdown
-            rehypePlugins={[rehypeRaw]}
-            components={{
-              a(props) {
-                const { node, ...rest } = props;
-                return <a className="text-blue-400 underline" {...rest}></a>;
-              },
-            }}
-          >
-            {`
-<div style='text-align: center; color: #666;'>
-© 2024 Ballot Initiative Project | <a href='#'>Privacy Policy</a> | <a href='#'>Terms of Use</a>
-</div>`}
-          </Markdown>
+        <main className="w-full">
+          {children}
+          <ModeToggle />
+          <Toaster />
+        </main>
+        <footer className="centered mt-auto mb-4">
+          © {new Date().getFullYear()} Ballot Initiative Project
         </footer>
-      </main>
+      </div>
     </SidebarProvider>
   );
 }

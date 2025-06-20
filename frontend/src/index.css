@@ -115,10 +115,13 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground m-2;
   }
   h1 {
     @apply text-3xl font-bold text-gray-900 dark:text-white mb-2;
+  }
+  h2 {
+    @apply text-2xl font-bold text-gray-900 dark:text-white mb-2;
   }
   h3 {
     @apply text-2xl font-bold text-gray-900 dark:text-white mb-2;

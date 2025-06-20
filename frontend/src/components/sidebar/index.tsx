@@ -1,4 +1,4 @@
-import { FileCheck, Home, Settings } from "lucide-react";
+import { FileCheck, Home, Settings, Table } from "lucide-react";
 
 import {
   Sidebar,
@@ -27,6 +27,11 @@ export const items = [
     title: "Home",
     url: "/",
     icon: Home,
+  },
+  {
+    title: "Voter Records",
+    url: "/voter-records",
+    icon: Table,
   },
   {
     title: "Petition Validation",
@@ -76,10 +81,6 @@ const instructions = [
       </ul>
     ),
   },
-  {
-    title: "4️⃣ Clear Files",
-    content: "Clear temporary files when done",
-  },
 ];
 
 export function AppSidebar() {
@@ -88,10 +89,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <SidebarGroupLabel>Ballot Initiative</SidebarGroupLabel>
+      <SidebarHeader className="m-2">
+        <SidebarGroupLabel>
+          <h2>
+          Ballot Initiative
+            </h2>
+            </SidebarGroupLabel>
       </SidebarHeader>
-      <SidebarContent className="[overflow:overlay] [&::-webkit-scrollbar-track]:bg-black-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar]:w-2 h-full">
+      <SidebarContent className="m-f [overflow:overlay] [&::-webkit-scrollbar-track]:bg-black-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar]:w-2 h-screen">
         <SidebarGroup className="border-b dark:border-gray-500 border-black">
           <SidebarGroupContent>
             <SidebarMenu>
@@ -100,8 +105,8 @@ export function AppSidebar() {
                   key={item.title}
                   className={`${location.pathname === item.url ? "bg-gray-200 dark:bg-gray-800 rounded-sm" : ""}`}
                 >
-                  <SidebarMenuButton asChild>
-                    <Link to={item.url}>
+                  <SidebarMenuButton asChild size='lg'>
+                    <Link  to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
@@ -135,9 +140,9 @@ export function AppSidebar() {
         </SidebarGroup>
         {}
       </SidebarContent>
-      <SidebarFooter className="flex flex-row">
+      <SidebarFooter className="flex flex-row mb-4">
         <SidebarMenuItem key="Settings">
-          <SidebarMenuButton asChild>
+          <SidebarMenuButton asChild size='lg'>
             <a href="/settings">
               <Settings />
               <span>{"Settings"}</span>
