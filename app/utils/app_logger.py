@@ -16,11 +16,19 @@ def get_log_queue() -> asyncio.Queue:
 def sse_processor(logger, method_name, event_dict):
     # Add the log message to the queue
     queue = get_log_queue()
-    asyncio.create_task(queue.put({
+    log_item = {
         "level": method_name,
         "message": event_dict.get("event", ""),
         "timestamp": event_dict.get("timestamp", "")
-    }))
+    }
+    try:
+        loop = asyncio.get_running_loop()
+        # If we're in an async context, schedule with create_task
+        loop.create_task(queue.put(log_item))
+    except RuntimeError:
+        # No running event loop, schedule with call_soon_threadsafe
+        loop = asyncio.get_event_loop()
+        loop.call_soon_threadsafe(asyncio.create_task, queue.put(log_item))
     return event_dict
 
 def configure_logging(enable_debugging: bool = False):
