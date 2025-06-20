@@ -273,3 +273,5 @@ $RECYCLE.BIN/
 # Node
 node_modules
 dist
+
+*.sqlite
